@@ -4,6 +4,7 @@ from mbid import getMbid
 from pprint import pprint
 from spotify_auth import sp
 from spotipy import SpotifyException
+import urllib
 
 SPOTIFY_USER_ID = sp.me()['id']
 
@@ -47,12 +48,18 @@ def compileSongs(setlists, artist_name):
         })
 
     sortedData = sorted(setlist_data, key=lambda d: d['occurences'], reverse = True)
+
     return sortedData
 
 def getTrackSpotifyId(name, artist):
     if name == None or name == '':
         return
-    track = sp.search(q = 'track:{t}+artist:{a}'.format(t = name, a = artist), type = 'track', limit = 1)
+    name = urllib.parse.quote_plus(name)
+    artist = urllib.parse.quote_plus(artist)
+    query_string = f'{name}%20artist:{artist}'
+
+    track = sp.search(q = query_string, type = 'track', limit = 1)
+
     try:
         track_id = track['tracks']['items'][0]['id']
     except IndexError:
@@ -65,14 +72,13 @@ def makePlaylist(artist_name, number, artist_id):
     setlists = getSetlists(artist_id, number)
     songs = compileSongs(setlists, artist_name)
     pprint(songs)
-
-    playlist_id = sp.user_playlist_create(user = SPOTIFY_USER_ID, name = playlist_name, public = False)['id']
+    #playlist_id = sp.user_playlist_create(user = SPOTIFY_USER_ID, name = playlist_name, public = False)['id']
 
     for song in songs:
         track = [song['spotify-id']]
         if track[0] == None:
             continue
-        sp.playlist_add_items(playlist_id, track)
+        # sp.playlist_add_items(playlist_id, track)
     print("PLAYLIST CREATED")
 
 
