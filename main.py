@@ -4,7 +4,8 @@ from mbid import getMbid
 from pprint import pprint
 from spotify_auth import sp
 from spotipy import SpotifyException
-import urllib
+import urllib.parse
+from deezer_util import get_deezer_id, get_isrc
 
 SPOTIFY_USER_ID = sp.me()['id']
 
@@ -52,11 +53,14 @@ def compileSongs(setlists, artist_name):
     return sortedData
 
 def getTrackSpotifyId(name, artist):
+    # deezer_id = get_deezer_id(name, artist)
+    # isrc = get_isrc(deezer_id)
+
     if name == None or name == '':
         return
-    name = urllib.parse.quote_plus(name)
-    artist = urllib.parse.quote_plus(artist)
-    query_string = f'{name}%20artist:{artist}'
+
+    query_string = f'artist:{artist} track:{name}'
+    query_encoded = urllib.parse.quote(query_string)
 
     track = sp.search(q = query_string, type = 'track', limit = 1)
 
@@ -67,19 +71,26 @@ def getTrackSpotifyId(name, artist):
 
     return track_id
 
+
 def makePlaylist(artist_name, number, artist_id):
     playlist_name = (artist_name + " Live")
     setlists = getSetlists(artist_id, number)
     songs = compileSongs(setlists, artist_name)
     pprint(songs)
-    #playlist_id = sp.user_playlist_create(user = SPOTIFY_USER_ID, name = playlist_name, public = False)['id']
+    playlist_id = sp.user_playlist_create(user = SPOTIFY_USER_ID, name = playlist_name, public = False)['id']
+    no_id_found = []
 
     for song in songs:
         track = [song['spotify-id']]
         if track[0] == None:
+            no_id_found.append(song['song-name'])
             continue
-        # sp.playlist_add_items(playlist_id, track)
+
+        sp.playlist_add_items(playlist_id, track)
+
     print("PLAYLIST CREATED")
+    for item in no_id_found:
+        print(f'No ID found for {item}\n')
 
 
 
